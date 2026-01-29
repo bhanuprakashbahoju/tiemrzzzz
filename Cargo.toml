@@ -1,0 +1,13 @@
+[package]
+name = "tiemrzzzz"
+version = "0.1.0"
+edition = "2021"
+authors = ["Bhanuprakash"]
+description = "A minimalist, pixel-style timer application for Linux and Windows"
+
+[dependencies]
+eframe = "0.29"
+
+[profile.release]
+opt-level = 3
+lto = true
