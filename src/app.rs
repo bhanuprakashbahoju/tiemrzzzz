@@ -58,10 +58,7 @@ impl eframe::App for TimerApp {
             self.show_colon = true;
         }
 
-        // Keep enforcing always-on-top in overlay mode
-        if self.overlay_mode {
-            ctx.send_viewport_cmd(egui::ViewportCommand::WindowLevel(egui::WindowLevel::AlwaysOnTop));
-        }
+
 
         // Colors
         let bg_color = if self.overlay_mode {
@@ -109,28 +106,40 @@ impl eframe::App for TimerApp {
             );
 
             if self.overlay_mode {
-                // Make the whole area clickable for pause/resume
-                let response = ui.allocate_rect(ui.max_rect(), egui::Sense::click());
-                if response.clicked() {
-                    self.timer.toggle();
+                let rect = ui.max_rect();
+                
+                // Background interaction - allocated first so it's behind the button
+                let bg_response = ui.allocate_rect(rect, egui::Sense::click_and_drag());
+                
+                if bg_response.drag_started() {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::StartDrag);
                 }
                 
-                // Exit overlay button in corner (small, subtle)
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
-                    let exit_btn = egui::Button::new(
-                        RichText::new("✕").size(12.0).color(Color32::from_rgba_unmultiplied(255, 255, 255, 150))
-                    )
-                    .fill(Color32::TRANSPARENT);
-                    
-                    if ui.add(exit_btn).on_hover_text("Exit focus mode").clicked() {
-                        self.overlay_mode = false;
-                        // Request window resize back to normal
-                        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(400.0, 400.0)));
-                        ctx.send_viewport_cmd(egui::ViewportCommand::WindowLevel(egui::WindowLevel::Normal));
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Decorations(true));
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Transparent(false));
-                    }
-                });
+                // Exit button - Positioned manually at top-right
+                let exit_size = Vec2::new(24.0, 24.0);
+                let exit_rect = egui::Rect::from_min_size(
+                    rect.right_top() - Vec2::new(exit_size.x, 0.0), 
+                    exit_size
+                );
+                
+                let exit_btn = egui::Button::new(
+                    RichText::new("✕").size(14.0).color(Color32::from_rgba_unmultiplied(255, 255, 255, 150))
+                )
+                .fill(Color32::TRANSPARENT);
+
+                let exit_response = ui.put(exit_rect, exit_btn);
+                
+                // Check exit click FIRST (takes priority)
+                if exit_response.on_hover_text("Exit focus mode").clicked() {
+                    self.overlay_mode = false;
+                    // Request window resize back to normal
+                    ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(400.0, 400.0)));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Decorations(true));
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Transparent(false));
+                } else if bg_response.clicked() {
+                    // Only toggle if exit wasn't clicked
+                    self.timer.toggle();
+                }
             } else {
                 // Full UI mode
                 

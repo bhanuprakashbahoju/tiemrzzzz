@@ -14,6 +14,7 @@ fn main() -> eframe::Result<()> {
             .with_min_inner_size([180.0, 80.0])
             .with_title("Timer")
             .with_resizable(true)
+            .with_always_on_top()
             .with_transparent(true), // Enable transparency
         ..Default::default()
     };
